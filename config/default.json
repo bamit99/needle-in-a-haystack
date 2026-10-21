@@ -3,8 +3,8 @@
     {
       "laneId": "llm",
       "adapter": "openai",
-      "baseUrl": "http://localhost:1234/v1",
-      "model": "CHANGE_ME",
+      "baseUrl": "http://192.168.0.5:11434/v1",
+      "model": "beam:cloud",
       "apiKeyEnv": "LLM_API_KEY",
       "prompt": "Classify this image as exactly one of: hay, needle. Answer with one word.",
       "timeoutMs": 30000,
