@@ -44,6 +44,16 @@ export function createApp({ config, adapterFactory }) {
       res.end(JSON.stringify({ manifest: entry.manifest, config: publicConfig(config), summary, records }));
       return;
     }
+    const imageMatch = url.pathname.match(/^\/api\/runs\/([^/]+)\/image\/([A-Za-z0-9._-]+)$/);
+    if (imageMatch) {
+      const entry = runs.get(imageMatch[1]);
+      if (!entry) { res.statusCode = 404; res.end(); return; }
+      const item = entry.manifest.items.find((i) => i.imagePath === imageMatch[2]);
+      if (!item) { res.statusCode = 404; res.end(); return; }
+      res.setHeader('content-type', 'image/png');
+      res.end(await readFile(join(entry.runDir, item.imagePath)));
+      return;
+    }
     if (url.pathname === '/api/config') {
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify(publicConfig(config)));

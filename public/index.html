@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Needle in a Haystack — LLM vs Jev</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><h1>Needle in a Haystack</h1><span id="mockBadge" class="badge hidden">MOCK</span></header>
+
+<section id="setup">
+  <label>Hay count <input id="hayCount" type="number" value="20" min="1" max="199"></label>
+  <label>Needle count <input id="needleCount" type="number" value="3" min="1" max="50"></label>
+  <label>Seed <input id="seed" type="text" placeholder="blank = new random"></label>
+  <label>Mode
+    <select id="mode">
+      <option value="race">race (lanes concurrent)</option>
+      <option value="sequential">sequential lanes (controlled)</option>
+    </select>
+  </label>
+  <button id="startBtn">Start</button>
+  <div id="endpoints"></div>
+  <div id="setupWarn" class="warn hidden"></div>
+</section>
+
+<main id="lanes" class="hidden">
+  <div class="lane" id="lane0"><h2></h2><canvas width="420" height="220"></canvas>
+    <div class="metrics"></div><ul class="feed"></ul></div>
+  <div class="lane" id="lane1"><h2></h2><canvas width="420" height="220"></canvas>
+    <div class="metrics"></div><ul class="feed"></ul></div>
+</main>
+
+<section id="charts" class="hidden">
+  <div><h3>Latency distribution (ms)</h3><canvas id="latChart" width="420" height="160"></canvas></div>
+  <div><h3>Accuracy over time</h3><canvas id="accChart" width="420" height="160"></canvas></div>
+  <div><h3>Cost accumulated (USD)</h3><canvas id="costChart" width="420" height="160"></canvas></div>
+  <p id="sampleNote"></p>
+</section>
+
+<section id="end" class="hidden">
+  <h2>Results</h2>
+  <table id="endTable"></table>
+  <p id="endStatement"></p>
+  <p id="endMeta"></p>
+</section>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

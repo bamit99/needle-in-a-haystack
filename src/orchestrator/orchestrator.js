@@ -29,7 +29,7 @@ export function createOrchestrator({ manifest, lanes, config, bus, runDir }) {
         }
         records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: d.label, status: d.status, latencyMs: d.latencyMs, costUsd: d.costUsd, retry: false });
         const correct = d.status === 'ok' && d.label === item.groundTruth;
-        emit('decision', lane.laneId, item.itemId, { predicted: d.label, status: d.status, correct });
+        emit('decision', lane.laneId, item.itemId, { predicted: d.label, status: d.status, correct, groundTruth: item.groundTruth, latencyMs: d.latencyMs, costUsd: d.costUsd });
         emit('item_dropped', lane.laneId, item.itemId, { bin: correct ? d.label : 'mistakes' });
       } catch (e) {
         records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: null, status: 'provider_error', latencyMs: null, costUsd: null, retry: false, error: { message: e.message } });

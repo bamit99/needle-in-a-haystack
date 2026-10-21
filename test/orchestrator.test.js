@@ -66,3 +66,21 @@ test('retries are recorded when enabled', async (t) => {
   assert.equal(flakyLane.metrics.attempted, 3); // 1 failed + 1 retry + 1 clean item
   assert.equal(flakyLane.metrics.correct, 1);   // item-000 retry lands correct; item-001 labeled hay, truth needle
 });
+
+test('decision events carry what the live UI needs', async (t) => {
+  const { runDir, manifest, bus } = await fixture(t);
+  const a = fakeAdapter('a', () => ({ label: 'needle', latencyMs: 42, costUsd: 0.001, raw: '', status: 'ok', error: null }));
+  const events = [];
+  bus.on(e => events.push(e));
+  await createOrchestrator({ manifest, lanes: [{ laneId: 'a', adapter: a }], config: { concurrency: 1, retries: 0 }, bus, runDir }).start();
+  const decisions = events.filter(e => e.type === 'decision');
+  assert.equal(decisions.length, 2);
+  for (const d of decisions) {
+    assert.ok(['hay', 'needle'].includes(d.predicted));
+    assert.ok(['hay', 'needle'].includes(d.groundTruth));
+    assert.equal(typeof d.latencyMs, 'number');
+    assert.equal(d.costUsd, 0.001);
+    assert.equal(d.status, 'ok');
+    assert.equal(typeof d.correct, 'boolean');
+  }
+});

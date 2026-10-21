@@ -41,4 +41,11 @@ test('start a round with fake adapters, export matches recorded data, no secrets
   assert.equal(exportBody.summary.lanes.length, 2);
   assert.equal(exportBody.summary.lanes[0].metrics.correct, 4); // 4 hay items; 2 needles labeled hay
   assert.ok(!JSON.stringify(exportBody).includes('SECRET-DO-NOT-LEAK'));
+
+  const item = exportBody.manifest.items[0];
+  const imgRes = await fetch(`${base}/api/runs/${runId}/image/${item.imagePath}`);
+  assert.ok(imgRes.ok, 'image route missing');
+  const { createHash } = await import('node:crypto');
+  const digest = createHash('sha256').update(Buffer.from(await imgRes.arrayBuffer())).digest('hex');
+  assert.equal(digest, item.imageSha256);
 });
