@@ -1,0 +1,25 @@
+{
+  "lanes": [
+    {
+      "laneId": "llm",
+      "adapter": "openai",
+      "baseUrl": "http://localhost:1234/v1",
+      "model": "CHANGE_ME",
+      "apiKeyEnv": "LLM_API_KEY",
+      "prompt": "Classify this image as exactly one of: hay, needle. Answer with one word.",
+      "timeoutMs": 30000,
+      "pricePerMTokIn": null,
+      "pricePerMTokOut": null
+    },
+    {
+      "laneId": "jev",
+      "adapter": "jev",
+      "url": "http://localhost:1235/classify",
+      "timeoutMs": 5000,
+      "costUsdPerCall": null
+    }
+  ],
+  "imageSize": 256,
+  "concurrency": 1,
+  "retries": 0
+}
