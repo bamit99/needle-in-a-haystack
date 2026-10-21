@@ -25,7 +25,7 @@ test('start a round with fake adapters, export matches recorded data, no secrets
 
   const startRes = await fetch(`${base}/api/start`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ hayCount: 4, needleCount: 2, seed: 's9' }),
+    body: JSON.stringify({ hayCount: 4, needleCount: 2, seed: 's9', mode: 'sequential' }),
   });
   const { runId } = await startRes.json();
   assert.ok(runId);
@@ -37,6 +37,7 @@ test('start a round with fake adapters, export matches recorded data, no secrets
     await new Promise((r2) => setTimeout(r2, 100));
   }
   assert.ok(exportBody, 'export never appeared');
+  assert.equal(exportBody.summary.mode, 'sequential_lanes'); // start body mode is honored
   assert.equal(exportBody.manifest.items.length, 6);
   assert.equal(exportBody.summary.lanes.length, 2);
   assert.equal(exportBody.summary.lanes[0].metrics.correct, 4); // 4 hay items; 2 needles labeled hay

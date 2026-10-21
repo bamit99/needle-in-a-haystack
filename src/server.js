@@ -22,7 +22,7 @@ export function createApp({ config, adapterFactory }) {
       const runDir = join(config.runsDir ?? 'runs', `run-${Date.now()}`);
       const manifest = await buildManifest({ hayCount: body.hayCount, needleCount: body.needleCount, seed: body.seed ?? String(Date.now()), outDir: runDir });
       const lanes = config.lanes.map((lane) => ({ laneId: lane.laneId, adapter: adapterFactory(lane) }));
-      const orch = createOrchestrator({ manifest, lanes, config, bus, runDir });
+      const orch = createOrchestrator({ manifest, lanes, config: { ...config, sequentialLanes: body.mode === 'sequential' }, bus, runDir });
       const entry = { manifest, runDir, summaryPromise: orch.start() };
       runs.set(manifest.runId, entry);
       res.setHeader('content-type', 'application/json');
