@@ -23,7 +23,7 @@ end-of-round table are the real thing._</sub>
   │ ╱      └────┘      ╲         │        │         ╱      └────┘      ╲ │
   │ │   hay        needle │       │        │        │   hay        needle │
   └──────────────────────────────┘        └──────────────────────────────┘
-       median 2.0s, acc 0.3                     median 9.0s, acc 0.3
+     median 3.7s, acc 1.0                    median 9.0s, acc not measured
 ```
 
 ---
@@ -115,14 +115,19 @@ If you want a lane that truly sees pixels, point the `openai` adapter at a visio
 
 | lane | accuracy | balanced acc | median | p95 | errors | cost |
 |---|---|---|---|---|---|---|
-| `llm` — MiniMax M3.1 Flash (vision, cloud) | 0.30 | 0.50 | 2017 ms | 7053 ms | 0 | N/A |
-| `jev` — hosted jev-1.13 (shape mask) | 0.30 | 0.31 | 9009 ms | 13069 ms | 4 (402, out of credits) | 1 credit/call |
+| `llm` — MiniMax M3.1 Flash (vision, cloud) | 1.00 / 0.90 | 1.00 / 0.93 | 3.1–3.7 s | 4.9–8.0 s | 0 | N/A |
+| `jev` — hosted jev-1.13 (shape mask) | not measured¹ | — | ~9–13 s | — | 402 after 6 calls² | 1 credit/call |
+
+¹ the account ran out of credits before we could re-measure it on the legible sprites.
+² `402 Payment Required` — failed calls are never charged, and the game shows them as errors, not zeroes.
 
 Two honest findings:
 
-1. **Our hay is sneakier than intended.** A 1–2 px straw on a grey gradient disappears when a
-   vision model downsamples it, so *both* lanes look bad. Making the sprites legible is the
-   next fix — and it is a fix to the game, not to the models.
+1. **Our first hay was too good.** A 1–2 px straw on a grey gradient disappears when a vision
+   model downsamples it: both lanes scored ~0.3 and the game measured noise, not models. After
+   making the sprites legible (thicker shapes, real contrast, flat background — and a test that
+   downscales the sprite the way a model would), the chat lane jumped to **0.9–1.0**. If your
+   model looks bad here, check the hay before you blame the model.
 2. **The hosted decision API is slow from here.** Its own `latency_ms` says 0.44 s, but the
    round trip is ~9 s. That gap is their per-call overhead, not our network (a plain `GET`
    to the same host takes 0.9 s).
