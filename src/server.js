@@ -6,6 +6,7 @@ import { loadConfig, publicConfig } from './config.js';
 import { buildManifest } from './generator/manifest.js';
 import { createOpenAIAdapter } from './adapters/openai.js';
 import { createJevAdapter } from './adapters/jev.js';
+import { createJevApiAdapter } from './adapters/jevapi.js';
 import { createEventBus } from './orchestrator/events.js';
 import { createOrchestrator } from './orchestrator/orchestrator.js';
 
@@ -92,12 +93,32 @@ export function createApp({ config, adapterFactory }) {
   return { app: handle, bus };
 }
 
-if (process.argv[1] && process.argv[1].endsWith('server.js')) {
-  const config = await loadConfig('config/default.json');
-  const adapterFactory = (lane) => (lane.adapter === 'openai' ? createOpenAIAdapter(lane) : createJevAdapter(lane));
+export async function startServer({ config, adapterFactory, port = 8787 }) {
   const { app, bus } = createApp({ config, adapterFactory });
   const server = createServer(app);
+  await new Promise((resolve, reject) => {
+    server.once('error', (err) => reject(
+      err.code === 'EADDRINUSE'
+        ? new Error(`port ${port} is already in use - stop the other instance or pick another port`)
+        : err,
+    ));
+    server.listen(port, resolve);
+  });
   const wss = new WebSocketServer({ server, path: '/ws' });
-  bus.on((event) => { const msg = JSON.stringify(event); for (const c of wss.clients) if (c.readyState === 1) c.send(msg); });
-  server.listen(8787, () => console.log('NIHS on http://localhost:8787'));
+  bus.on((event) => {
+    const msg = JSON.stringify(event);
+    for (const c of wss.clients) if (c.readyState === 1) c.send(msg);
+  });
+  return { server, bus, wss };
+}
+
+if (process.argv[1] && process.argv[1].endsWith('server.js')) {
+  const config = await loadConfig('config/default.json');
+  const adapterFactory = (lane) => (
+    lane.adapter === 'openai' ? createOpenAIAdapter(lane)
+      : lane.adapter === 'jevapi' ? createJevApiAdapter(lane)
+        : createJevAdapter(lane)
+  );
+  const { server } = await startServer({ config, adapterFactory });
+  console.log('NIHS on http://localhost:8787');
 }

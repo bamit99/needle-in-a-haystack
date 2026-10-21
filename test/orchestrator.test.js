@@ -49,8 +49,9 @@ test('one lane throwing does not stop the other; summary still generated', async
   const boomLane = summary.lanes.find(l => l.laneId === 'boom');
   assert.equal(boomLane.metrics.errors, 2);
   assert.equal(summary.lanes.find(l => l.laneId === 'good').metrics.correct, 1);
+  const boomRecords = (await readFile(join(runDir, 'boom.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(boomRecords[0].error.message, 'lane down'); // failures keep their reason
 });
-
 test('retries are recorded when enabled', async (t) => {
   const { runDir, manifest, bus } = await fixture(t);
   let calls = 0;
@@ -65,6 +66,29 @@ test('retries are recorded when enabled', async (t) => {
   const flakyLane = summary.lanes.find(l => l.laneId === 'flaky');
   assert.equal(flakyLane.metrics.attempted, 3); // 1 failed + 1 retry + 1 clean item
   assert.equal(flakyLane.metrics.correct, 1);   // item-000 retry lands correct; item-001 labeled hay, truth needle
+});
+
+test('confidence and usage reach the record and the decision event', async (t) => {
+  const { runDir, manifest, bus } = await fixture(t);
+  const a = fakeAdapter('a', () => ({ label: 'hay', latencyMs: 7, costUsd: null, confidence: 0.62, usage: { inputTokens: 340, chargedTokens: 0, chargedCredits: 1, wallet: 'credits' }, raw: '', status: 'ok', error: null }));
+  const events = [];
+  bus.on(e => events.push(e));
+  await createOrchestrator({ manifest, lanes: [{ laneId: 'a', adapter: a }], config: { concurrency: 1, retries: 0 }, bus, runDir }).start();
+  const d = events.filter(e => e.type === 'decision')[0];
+  assert.equal(d.confidence, 0.62);
+  assert.equal(d.usage.chargedCredits, 1);
+  const records = (await readFile(join(runDir, 'a.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(records[0].confidence, 0.62);
+  assert.equal(records[0].usage.chargedCredits, 1);
+});
+
+test('adapter failures keep their reason in the record', async (t) => {
+  const { runDir, manifest, bus } = await fixture(t);
+  const bad = fakeAdapter('bad', () => ({ label: null, latencyMs: 9, costUsd: null, confidence: null, usage: null, raw: 'nope', status: 'provider_error', error: { httpStatus: 409, message: 'conflict' } }));
+  await createOrchestrator({ manifest, lanes: [{ laneId: 'bad', adapter: bad }], config: { concurrency: 1, retries: 0 }, bus, runDir }).start();
+  const records = (await readFile(join(runDir, 'bad.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+  assert.equal(records[0].status, 'provider_error');
+  assert.equal(records[0].error.httpStatus, 409);
 });
 
 test('decision events carry what the live UI needs', async (t) => {

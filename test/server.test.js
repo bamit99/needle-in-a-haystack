@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createApp } from '../src/server.js';
+import { createApp, startServer } from '../src/server.js';
 
 test('start a round with fake adapters, export matches recorded data, no secrets', async (t) => {
   const runsDir = await mkdtemp(join(tmpdir(), 'nihs-runs-'));
@@ -62,4 +62,17 @@ test('start a round with fake adapters, export matches recorded data, no secrets
     body: JSON.stringify({ hayCount: 0, needleCount: 0, seed: 's9' }),
   });
   assert.equal(bad.status, 400);
+});
+
+test('startServer fails loudly when the port is taken (no silent stale server)', async () => {
+  const config = { lanes: [], imageSize: 256, concurrency: 1, retries: 0, runsDir: 'runs' };
+  const adapterFactory = () => ({ classify: async () => ({}) });
+  const first = await startServer({ config, adapterFactory, port: 0 });
+  const port = first.server.address().port;
+  await assert.rejects(
+    () => startServer({ config, adapterFactory, port }),
+    (err) => /in use|EADDRINUSE/i.test(err.message),
+  );
+  await new Promise((r) => first.server.close(r));
+  await new Promise((r) => first.wss.close(r));
 });

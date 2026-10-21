@@ -13,10 +13,13 @@
     },
     {
       "laneId": "jev",
-      "adapter": "jev",
-      "url": "http://localhost:1235/classify",
-      "timeoutMs": 5000,
-      "costUsdPerCall": null
+      "adapter": "jevapi",
+      "url": "https://jev-ai.org/api/v1/systemone/",
+      "model": "jev-1.13",
+      "apiKeyEnv": "JEV_API_KEY",
+      "questionKey": "label",
+      "timeoutMs": 30000,
+      "pricePerMTokIn": null
     }
   ],
   "imageSize": 256,

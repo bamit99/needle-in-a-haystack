@@ -22,14 +22,14 @@ export function createOrchestrator({ manifest, lanes, config, bus, runDir }) {
       try {
         emit('item_picked', lane.laneId, item.itemId);
         const image = await readFile(join(runDir, item.imagePath)).catch(() => Buffer.alloc(0));
-        let d = await lane.adapter.classify(image, { itemId: item.itemId });
+        let d = await lane.adapter.classify(image, { itemId: item.itemId, runId: manifest.runId });
         for (let r = 0; r < config.retries && d.status !== 'ok'; r++) {
-          records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: d.label, status: d.status, latencyMs: d.latencyMs, costUsd: d.costUsd, retry: true });
-          d = await lane.adapter.classify(image, { itemId: item.itemId, retry: r + 1 });
+          records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: d.label, status: d.status, latencyMs: d.latencyMs, costUsd: d.costUsd, confidence: d.confidence ?? null, usage: d.usage ?? null, retry: true });
+          d = await lane.adapter.classify(image, { itemId: item.itemId, runId: manifest.runId, retry: r + 1 });
         }
-        records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: d.label, status: d.status, latencyMs: d.latencyMs, costUsd: d.costUsd, retry: false });
+        records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: d.label, status: d.status, latencyMs: d.latencyMs, costUsd: d.costUsd, confidence: d.confidence ?? null, usage: d.usage ?? null, error: d.error ?? null, retry: false });
         const correct = d.status === 'ok' && d.label === item.groundTruth;
-        emit('decision', lane.laneId, item.itemId, { predicted: d.label, status: d.status, correct, groundTruth: item.groundTruth, latencyMs: d.latencyMs, costUsd: d.costUsd });
+        emit('decision', lane.laneId, item.itemId, { predicted: d.label, status: d.status, correct, groundTruth: item.groundTruth, latencyMs: d.latencyMs, costUsd: d.costUsd, confidence: d.confidence ?? null, usage: d.usage ?? null });
         emit('item_dropped', lane.laneId, item.itemId, { bin: correct ? d.label : 'mistakes' });
       } catch (e) {
         records.push({ itemId: item.itemId, groundTruth: item.groundTruth, predicted: null, status: 'provider_error', latencyMs: null, costUsd: null, retry: false, error: { message: e.message } });
