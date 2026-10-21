@@ -53,4 +53,13 @@ test('start a round with fake adapters, export matches recorded data, no secrets
   const { createHash } = await import('node:crypto');
   const digest = createHash('sha256').update(Buffer.from(await imgRes.arrayBuffer())).digest('hex');
   assert.equal(digest, item.imageSha256);
+
+  const trav = await fetch(`${base}/%2e%2e/package.json`); // encoded ../ escape out of public/
+  assert.ok(!trav.ok, 'path traversal served a file outside public/');
+
+  const bad = await fetch(`${base}/api/start`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ hayCount: 0, needleCount: 0, seed: 's9' }),
+  });
+  assert.equal(bad.status, 400);
 });

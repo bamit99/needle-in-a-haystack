@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { readFile, readdir } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { extname, join, resolve, sep } from 'node:path';
 import { WebSocketServer } from 'ws';
 import { loadConfig, publicConfig } from './config.js';
 import { buildManifest } from './generator/manifest.js';
@@ -19,8 +19,12 @@ export function createApp({ config, adapterFactory }) {
     const url = new URL(req.url, 'http://x');
     if (req.method === 'POST' && url.pathname === '/api/start') {
       const body = JSON.parse(await readBody(req));
+      const hayCount = Number(body.hayCount), needleCount = Number(body.needleCount);
+      if (!Number.isInteger(hayCount) || hayCount < 1 || !Number.isInteger(needleCount) || needleCount < 1) {
+        res.statusCode = 400; res.end(); return;
+      }
       const runDir = join(config.runsDir ?? 'runs', `run-${Date.now()}`);
-      const manifest = await buildManifest({ hayCount: body.hayCount, needleCount: body.needleCount, seed: body.seed ?? String(Date.now()), outDir: runDir });
+      const manifest = await buildManifest({ hayCount, needleCount, seed: body.seed ?? String(Date.now()), outDir: runDir, imageSize: config.imageSize });
       const lanes = config.lanes.map((lane) => ({ laneId: lane.laneId, adapter: adapterFactory(lane) }));
       const orch = createOrchestrator({ manifest, lanes, config: { ...config, sequentialLanes: body.mode === 'sequential' }, bus, runDir });
       const entry = { manifest, runDir, summaryPromise: orch.start() };
@@ -67,10 +71,12 @@ export function createApp({ config, adapterFactory }) {
       res.end(JSON.stringify(publicConfig(config)));
       return;
     }
-    // static from public/
+    // static from public/, guarded against path escape
     const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
+    const full = resolve(join('public', file));
+    if (!full.startsWith(resolve('public') + sep)) { res.statusCode = 404; res.end(); return; }
     try {
-      const data = await readFile(join('public', file));
+      const data = await readFile(full);
       res.setHeader('content-type', MIME[extname(file)] ?? 'application/octet-stream');
       res.end(data);
     } catch { res.statusCode = 404; res.end(); }

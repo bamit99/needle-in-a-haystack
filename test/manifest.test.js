@@ -18,3 +18,11 @@ test('counts and shuffle are deterministic for a seed', async () => {
   assert.deepEqual(onDisk.items, a.items);
   await rm(dirA, { recursive: true }); await rm(dirB, { recursive: true });
 });
+test('imageSize is honored', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'nihs-size-'));
+  const m = await buildManifest({ hayCount: 1, needleCount: 1, seed: 'sz', outDir: dir, imageSize: 64 });
+  const { PNG } = await import('pngjs');
+  const png = PNG.sync.read(await readFile(join(dir, m.items[0].imagePath)));
+  assert.equal(png.width, 64);
+  await rm(dir, { recursive: true });
+});
