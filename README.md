@@ -8,6 +8,11 @@ The needles might show up first, or on item 37. You watch both lanes crawl at th
 
 Then the game shows you who was faster, who was cheaper, and who was right — measured, not narrated.
 
+![a local run of the game](docs/screenshot.png)
+
+<sub>_A local run against stub endpoints — the lane answers come from a mock, the layout, the charts and the
+end-of-round table are the real thing._</sub>
+
 ```
   ┌──────────────────────────────┐        ┌──────────────────────────────┐
   │  llm  (chat model)           │        │  jev  (decision model)       │
