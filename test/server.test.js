@@ -43,6 +43,10 @@ test('start a round with fake adapters, export matches recorded data, no secrets
   assert.ok(!JSON.stringify(exportBody).includes('SECRET-DO-NOT-LEAK'));
 
   const item = exportBody.manifest.items[0];
+  const manRes = await fetch(`${base}/api/runs/${runId}/manifest`);
+  assert.ok(manRes.ok, 'manifest route missing during live round');
+  const liveManifest = await manRes.json();
+  assert.deepEqual(liveManifest.items, exportBody.manifest.items);
   const imgRes = await fetch(`${base}/api/runs/${runId}/image/${item.imagePath}`);
   assert.ok(imgRes.ok, 'image route missing');
   const { createHash } = await import('node:crypto');

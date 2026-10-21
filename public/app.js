@@ -38,6 +38,8 @@ if (typeof document !== 'undefined') {
       }),
     });
     ({ runId } = await res.json());
+    window.__runCount = (window.__runCount ?? 0) + 1;
+    window.__manifest = await (await fetch(`/api/runs/${runId}/manifest`)).json();
     $('#lanes').classList.remove('hidden'); $('#charts').classList.remove('hidden');
     document.querySelectorAll('.lane').forEach((el, i) => { el.querySelector('h2').textContent = config?.lanes[i]?.laneId ?? el.dataset.lane; });
     const ws = new WebSocket(`/ws`);
